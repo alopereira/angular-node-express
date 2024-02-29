@@ -1,16 +1,111 @@
-<div class="po-wrapper">
-  <po-toolbar p-title="AppName"></po-toolbar>
+<po-page-default p-title="Geração de API REST" [p-actions]="pageActions">
+  <po-loading-overlay [hidden]="!isLoading"></po-loading-overlay>
 
-  <po-menu [p-menus]="menus"></po-menu>
+  <po-widget class="po-sm-12" p-title="Informações da API">
+    <div class="po-row d-flex-center">
+      <div class="po-sm-12 po-p-0 po-pt-1">
+        <po-select
+          class="po-sm-12 po-md-6 po-lg-3"
+          (p-change)="onChangeDatabase()"
+          p-label="Banco de dados"
+          [p-options]="DBList"
+          p-placeholder="Selecione o banco da tabela"
+          [ngModel]="selectedDB"
+          (ngModelChange)="selectedDB = $event"
+        >
+        </po-select>
 
-  <po-page-default p-title="AppName">
-    <p>AppName page</p>
+        <po-combo
+          class="po-sm-12 po-md-6 po-lg-3"
+          (p-change)="onChangeTable($event)"
+          [p-clean]="true"
+          p-field-label="tableName"
+          p-field-value="tableName"
+          p-label="Tabela"
+          [p-options]="tableList"
+          p-placeholder="Selecione a tabela"
+          [p-emit-object-value]="true"
+          [ngModel]="selectedTable"
+          (ngModelChange)="selectedTable = $event"
+          [p-disabled]="!selectedDB"
+        >
+        </po-combo>
+      </div>
 
-    <po-table
-      [p-items]="items"
-      [p-columns]="columns"
-      p-hide-columns-manager="true"
+      <div class="po-sm-12 po-p-0 po-pt-1">
+        <po-checkbox
+          class="po-sm-12"
+          p-label="Criar métodos CRUD?"
+          [(ngModel)]="isCRUD"
+        >
+        </po-checkbox>
+      </div>
+
+      <div class="po-sm-12 po-p-0 po-pt-1">
+        <po-input
+          class="po-sm-12 po-md-6"
+          [(ngModel)]="api.dboProgram"
+          p-placeholder="ex: inbo/boin031.p"
+          p-label="Caminho da BO"
+          p-disabled="!isCRUD"
+        >
+        </po-input>
+      </div>
+    </div>
+
+    <po-divider class="po-sm-12"></po-divider>
+
+    <div class="po-sm-12 po-p-0 po-pt-1">
+      <po-input
+        class="po-sm-12 po-md-6"
+        [(ngModel)]="api.apiName"
+        p-placeholder="ex: Product"
+        p-label="Nome"
+        [p-maxlength]="30"
+      >
+      </po-input>
+
+      <po-input
+        class="po-sm-12 po-md-2"
+        [(ngModel)]="api.apiVersion"
+        p-label="Versão"
+        p-placeholder="ex: v1"
+      >
+      </po-input>
+
+      <po-input
+        class="po-sm-12 po-md-2"
+        [(ngModel)]="api.moduleDir"
+        p-label="Diretório"
+        p-placeholder="ex: cdp"
+      >
+      </po-input>
+
+      <po-input
+        class="po-sm-12 po-md-2"
+        [(ngModel)]="api.moduleName"
+        p-label="Módulo"
+        p-placeholder="ex: mcd"
+      >
+      </po-input>
+    </div>
+  </po-widget>
+
+  <po-widget class="po-sm-12 po-pt-1" p-title="Campos da Tabela">
+    <kendo-grid
+      #grid
+      [data]="api.fields"
+      [sortable]="true"
+      (cellClick)="cellClickHandler($event)"
+      (cellClose)="cellCloseHandler($event)"
+      [navigable]="true"
     >
-    </po-table>
-  </po-page-default>
-</div>
+      <kendo-grid-column field="fieldName" title="Nome"></kendo-grid-column>
+      <kendo-grid-column field="fieldType" title="Tipo"></kendo-grid-column>
+      <kendo-grid-column
+        field="serializeName"
+        title="Nome serializado"
+      ></kendo-grid-column>
+    </kendo-grid>
+  </po-widget>
+</po-page-default>
