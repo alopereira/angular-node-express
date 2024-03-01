@@ -12,7 +12,7 @@ const app = express();
 
 // handling CORS
 app.use(cors(corsOption));
-app.use(express.json())
+app.use(express.json());
 
 
 var sample = require('./routes/sample.js');
