@@ -1,11 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-
-import { PoDialogService, PoNotificationService, PoPageAction, PoSelectOption } from '@po-ui/ng-components';
+import {
+  PoDialogService,
+  PoNotificationService,
+  PoPageAction,
+  PoSelectOption,
+} from '@po-ui/ng-components';
 import { Keys } from '@progress/kendo-angular-common';
 import { CellClickEvent, CellCloseEvent } from '@progress/kendo-angular-grid';
 import { APIField } from 'src/models/api-field.model';
 import { RestAPI } from 'src/models/rest-api.model';
+import { Tabela } from 'src/models/tabela.model';
 import { GridEditService } from 'src/services/grid-edit.service';
 import { SchemaService } from 'src/services/schema.service';
 
@@ -19,38 +24,39 @@ export class AppComponent implements OnInit {
   public isLoadingFields: boolean = false;
   public api: RestAPI = new RestAPI();
   public fieldColumns: Array<any> = [];
-  public selectedDB: string = "";
-  public selectedTable: string = "";
+  public selectedDB: string = '';
+  public selectedTable: string = '';
   public isCRUD: boolean = false;
-  public tableList: Array<PoSelectOption> = [];
+  public tabelas: Array<Tabela> = [];
+  public tabelaOptions: Array<PoSelectOption> = [];
   public DBList: Array<PoSelectOption> = [
     {
-      label: "emscad",
-      value: "emscad",
+      label: 'emscad',
+      value: 'emscad',
     },
     {
-      label: "emsfnd",
-      value: "emsfnd",
+      label: 'emsfnd',
+      value: 'emsfnd',
     },
     {
-      label: "emsmov",
-      value: "emsmov",
+      label: 'emsmov',
+      value: 'emsmov',
     },
     {
-      label: "mgcad",
-      value: "mgcad",
+      label: 'mgcad',
+      value: 'mgcad',
     },
     {
-      label: "mgmov",
-      value: "mgmov",
+      label: 'mgmov',
+      value: 'mgmov',
     },
   ];
 
   public pageActions: Array<PoPageAction> = [
     {
-      label: "Gerar API",
+      label: 'Gerar API',
       action: this.onClickGenerateAPI.bind(this),
-      icon: "po-icon-ok",
+      icon: 'po-icon-ok',
     },
   ];
 
@@ -64,19 +70,23 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  onClickGenerateAPI() {
-    if (!this.validateFields()) return;
-
-    this.schemaService.generate(this.api);
-  }
-
   onChangeDatabase() {
     this.isLoading = true;
     this.schemaService.tableQuery(this.selectedDB).subscribe({
       next: (response) => {
         this.isLoading = false;
-        this.tableList = response;
-        this.selectedTable = "";
+
+        this.tabelas = response.body;
+        this.tabelaOptions = response.body;
+
+        this.tabelas.forEach((tabela: any) => {
+          this.tabelaOptions.push({
+            value: tabela.tableName,
+            label: tabela.tableName,
+          });
+        });
+
+        this.selectedTable = '';
         this.api.fields = [];
       },
       error: (err) => {
@@ -87,18 +97,20 @@ export class AppComponent implements OnInit {
 
   onChangeTable(event: any) {
     if (event) {
-      this.api.fields = event.fields;
+      const tabela = this.tabelas.find((obj) => obj.tableName === event);
+
+      this.api.fields = tabela!.fields;
       this.api.tableName = this.selectedTable;
     } else {
       this.api.fields = [];
-      this.api.tableName = "";
+      this.api.tableName = '';
     }
   }
 
   validateFields(): boolean {
     if (this.isCRUD && !this.api.dboProgram) {
       this.notificationService.error(
-        "Para geração dos métodos CRUD é necessário informar o nome da BO da tabela."
+        'Para geração dos métodos CRUD é necessário informar o nome da BO da tabela.'
       );
 
       return false;
@@ -112,16 +124,16 @@ export class AppComponent implements OnInit {
       !this.api.tableName
     ) {
       this.notificationService.error(
-        "Preencha todas as informações do formulário antes de gerar a API!"
+        'Preencha todas as informações do formulário antes de gerar a API!'
       );
       return false;
     }
 
     if (this.api.fields.some((field) => !field.serializeName)) {
       this.dialogService.confirm({
-        title: "Existem campos sem Nome Serializado informado",
+        title: 'Existem campos sem Nome Serializado informado',
         message:
-          "Somente campos que possuem nome serializado preenchidos serão considerados durante a geração da API. Deseja continuar?",
+          'Somente campos que possuem nome serializado preenchidos serão considerados durante a geração da API. Deseja continuar?',
         confirm: () => {
           this.api.fields = this.api.fields.filter(
             (field) => field.serializeName
@@ -170,5 +182,11 @@ export class AppComponent implements OnInit {
       type: dataItem.fieldType,
       serializeName: dataItem.serializeName,
     });
+  }
+
+  onClickGenerateAPI() {
+    if (!this.validateFields()) return;
+
+    this.schemaService.generate(this.api);
   }
 }

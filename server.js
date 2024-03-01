@@ -13,11 +13,11 @@ const app = express();
 
 // handling CORS
 app.use(cors(corsOption));
+app.use(express.json())
 
 // route for handling requests from the Angular client
 app.get("/api/schema", async (req, res) => {
-  console.log("oiiiii");
-
+  
   try {
     const data = await fs.promises.readFile(
       `./db_definitions/db_${req.query.dbName}_definitions.json`,
@@ -38,7 +38,7 @@ app.get("/api/schema", async (req, res) => {
   }
 });
 
-app.post("/generateApi", async (req, res) => {
+app.post("/api/generate", async (req, res) => {
   try {
     // Extract request body parameters
     const {

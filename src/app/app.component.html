@@ -15,21 +15,18 @@
         >
         </po-select>
 
-        <po-combo
+        <po-select
           class="po-sm-12 po-md-6 po-lg-3"
           (p-change)="onChangeTable($event)"
-          [p-clean]="true"
+          p-label="Tabela"
+          [p-options]="tabelaOptions"
           p-field-label="tableName"
           p-field-value="tableName"
-          p-label="Tabela"
-          [p-options]="tableList"
           p-placeholder="Selecione a tabela"
-          [p-emit-object-value]="true"
           [ngModel]="selectedTable"
           (ngModelChange)="selectedTable = $event"
-          [p-disabled]="!selectedDB"
         >
-        </po-combo>
+        </po-select>
       </div>
 
       <div class="po-sm-12 po-p-0 po-pt-1">

@@ -1,4 +1,4 @@
-import { APIField } from "./api-field.model";
+import { Field } from "./field";
 
 export class RestAPI {
   apiName: string = "";
@@ -7,5 +7,5 @@ export class RestAPI {
   moduleName: string = "";
   moduleDir: string = "";
   dboProgram: string = "";
-  fields: Array<APIField> = [];
+  fields: Array<Field> = [];
 }
