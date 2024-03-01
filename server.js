@@ -2,7 +2,6 @@ const fs = require("fs");
 const archiver = require("archiver");
 const path = require("path");
 var cors = require("cors");
-
 const corsOption = {
   credentials: true,
   origin: ["http://localhost:4200"],
@@ -14,6 +13,13 @@ const app = express();
 // handling CORS
 app.use(cors(corsOption));
 app.use(express.json())
+
+
+var sample = require('./routes/sample.js');
+app.use(express.static(path.join(__dirname, 'dist')));
+app.use('/samples', express.static(path.join(__dirname, 'dist')));
+app.use('/sample', sample);
+
 
 // route for handling requests from the Angular client
 app.get("/api/schema", async (req, res) => {
