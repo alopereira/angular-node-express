@@ -1,7 +1,7 @@
-import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { BehaviorSubject, zip } from "rxjs";
-import { APIField } from "../models/api-field.model";
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, zip } from 'rxjs';
+import { APIField } from '../models/api-field.model';
 
 const itemIndex = (item: APIField, data: APIField[]): number => {
   for (let idx = 0; idx < data.length; idx++) {
@@ -20,7 +20,7 @@ const cloneData = (data: APIField[]) =>
 export class GridEditService extends BehaviorSubject<unknown[]> {
   private data: APIField[] = [];
   private originalData: APIField[] = [];
-  private updatedItems: APIField[] = []; 
+  private updatedItems: APIField[] = [];
 
   constructor(private http: HttpClient) {
     super([]);

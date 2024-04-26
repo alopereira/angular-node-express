@@ -1,7 +1,7 @@
-import { Field } from "./field";
+import { APIField } from "./api-field.model";
 
 export class Tabela {
   tableName: string = "";
   databaseName: string = "";
-  fields: Array<Field> = [];
+  fields: Array<APIField> = [];
 }

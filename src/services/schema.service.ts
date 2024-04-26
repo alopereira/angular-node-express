@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { RestAPI } from '../models/rest-api.model';
 import { saveAs } from 'file-saver';
 
-
 @Injectable({
   providedIn: 'root',
 })
