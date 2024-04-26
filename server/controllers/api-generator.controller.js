@@ -132,6 +132,9 @@ async function generateApi(
   moduleDir,
   dboProgram
 ) {
+
+  apiName = apiName.charAt(0).toUpperCase() + apiName.slice(1);
+
   let code = `
   USING Progress.Lang.Error.
   USING com.totvs.framework.api.JsonApiResponseBuilder.
@@ -162,7 +165,7 @@ async function generateApi(
     DEFINE OUTPUT PARAM oOutput AS JsonObject NO-UNDO.
     
     IF NOT VALID-HANDLE(apiHandler) THEN DO:
-        RUN ${moduleDir}/api${apiName}.p PERSISTENT SET apiHandler.
+        RUN ${moduleDir}/services/api${apiName}.p PERSISTENT SET apiHandler.
     END.
   
     RUN pi-get-v1 IN apiHandler (
@@ -222,7 +225,7 @@ async function generateApi(
     DEFINE VARIABLE aResult  AS JsonArray NO-UNDO.
   
     IF NOT VALID-HANDLE(apiHandler) THEN DO:
-        RUN ${moduleDir}/api${apiName}.p PERSISTENT SET apiHandler.
+        RUN ${moduleDir}/services/api${apiName}.p PERSISTENT SET apiHandler.
     END.
   
     DO TRANS ON STOP UNDO, RETURN "NOK":
@@ -427,30 +430,33 @@ async function generateApiService(
 
   code += `PROCEDURE pi-get-v1:\n\n`;
 
-  code += `   DEFINE INPUT  PARAM oInput  AS JsonObject NO-UNDO.\n`;
-  code += `   DEFINE OUTPUT PARAM oOutput AS JsonObject NO-UNDO.\n`;
-  code += `   DEFINE OUTPUT PARAM TABLE FOR RowErrors.\n\n`;
+  code += `    DEFINE INPUT  PARAM oInput  AS JsonObject NO-UNDO.\n`;
+  code += `    DEFINE OUTPUT PARAM oOutput AS JsonObject NO-UNDO.\n`;
+  code += `    DEFINE OUTPUT PARAM TABLE FOR RowErrors.\n\n`;
 
-  code += `   DEFINE VARIABLE oRequest        AS JsonAPIRequestParser NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE cExcept         AS CHARACTER            NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE tableKey        AS character            NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE logGetById      AS LOGICAL              NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE iCount          AS INTEGER              NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE cExpandable     AS CHARACTER            NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE cPeriodType     AS CHARACTER            NO-UNDO.\n`;
-  code += `   DEFINE VARIABLE iCountExpand    AS INTEGER              NO-UNDO.\n\n`;
+  code += `    DEFINE VARIABLE oRequest        AS JsonAPIRequestParser NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE cExcept         AS CHARACTER            NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE tableKey        AS character            NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE logGetById      AS LOGICAL              NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE iCount          AS INTEGER              NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE cExpandable     AS CHARACTER            NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE cPeriodType     AS CHARACTER            NO-UNDO.\n`;
+  code += `    DEFINE VARIABLE iCountExpand    AS INTEGER              NO-UNDO.\n\n`;
 
-  code += `   ASSIGN oRequest = NEW JsonAPIRequestParser(oInput).\n\n`;
+  code += `    ASSIGN oRequest = NEW JsonAPIRequestParser(oInput).\n\n`;
 
-  code += `   IF oRequest:getQueryParams():has("id") THEN DO:\n`;
-  code += `       ASSIGN tableKey = INPUT oRequest:getQueryParams():GetJsonArray("id"):GetCharacter(1).\n`;
-  code += `   END.\n`;
+  code += `    ASSIGN tableKey = decodeUrl(fn-get-id-from-path(oRequest)).\n\n`;
 
-  code += `   ASSIGN cExcept = JsonAPIUtils:getTableExceptFieldsBySerializedFields(\n`;
-  code += `       TEMP-TABLE ${className}:HANDLE, oRequest:getFields()\n`;
-  code += `   ).\n\n`;
+  code += `    FOR FIRST ${tableName} FIELDS () NO-LOCK\n`;
+  code += `        WHERE ${tableName}.it-codigo EQ tableKey:\n`;
+  code += `        ASSIGN tableKey = STRING(ROWID(${tableName})).\n`;
+  code += `    END.\n\n`;
 
-  code += `   FOR FIRST ${tableName} FIELDS (\n`;
+  code += `    ASSIGN cExcept = JsonAPIUtils:getTableExceptFieldsBySerializedFields(\n`;
+  code += `        TEMP-TABLE ${className}:HANDLE, oRequest:getFields()\n`;
+  code += `    ).\n\n`;
+
+  code += `    FOR FIRST ${tableName} FIELDS (\n`;
 
   fields.forEach((field, index) => {
     if (field.name != "r-rowid") {
@@ -458,33 +464,33 @@ async function generateApiService(
     }
   });
 
-  code += `       ) NO-LOCK\n`;
-  code += `       WHERE ROWID(${tableName}) EQ TO-ROWID(tableKey):\n\n`;
+  code += `        ) NO-LOCK\n`;
+  code += `        WHERE ROWID(${tableName}) EQ TO-ROWID(tableKey):\n\n`;
 
-  code += `       CREATE ${className}.\n`;
-  code += `       TEMP-TABLE ${className}:HANDLE:DEFAULT-BUFFER-HANDLE:BUFFER-COPY(\n`;
-  code += `           BUFFER ${tableName}:HANDLE, cExcept\n`;
-  code += `       ).\n`;
+  code += `        CREATE ${className}.\n`;
+  code += `        TEMP-TABLE ${className}:HANDLE:DEFAULT-BUFFER-HANDLE:BUFFER-COPY(\n`;
+  code += `            BUFFER ${tableName}:HANDLE, cExcept\n`;
+  code += `        ).\n`;
 
-  code += `       ASSIGN ${className}.r-rowid = STRING(ROWID(${tableName})).   \n\n`;
+  code += `        ASSIGN ${className}.r-rowid = STRING(ROWID(${tableName})).   \n\n`;
 
-  code += `   END.\n\n`;
+  code += `    END.\n\n`;
 
-  code += `   ASSIGN oOutput = JsonAPIUtils:convertTempTableFirstItemToJsonObject(\n`;
-  code += `       TEMP-TABLE ${className}:HANDLE, (LENGTH(TRIM(cExcept)) > 0)\n`;
-  code += `   ).\n`;
+  code += `    ASSIGN oOutput = JsonAPIUtils:convertTempTableFirstItemToJsonObject(\n`;
+  code += `        TEMP-TABLE ${className}:HANDLE, (LENGTH(TRIM(cExcept)) > 0)\n`;
+  code += `    ).\n`;
 
-  code += `   CATCH eSysError AS Progress.Lang.SysError:\n`;
-  code += `       CREATE RowErrors.\n`;
-  code += `       ASSIGN RowErrors.ErrorNumber = 17006\n`;
-  code += `              RowErrors.ErrorDescription = eSysError:getMessage(1)\n`;
-  code += `              RowErrors.ErrorSubType = "ERROR".\n`;
-  code += `   END.\n`;
-  code += `   FINALLY:\n`;
-  code += `       IF fn-has-row-errors() THEN DO:\n`;
-  code += `           UNDO, RETURN 'NOK':U.\n`;
-  code += `       END.\n`;
-  code += `   END FINALLY.\n\n`;
+  code += `    CATCH eSysError AS Progress.Lang.SysError:\n`;
+  code += `        CREATE RowErrors.\n`;
+  code += `        ASSIGN RowErrors.ErrorNumber = 17006\n`;
+  code += `               RowErrors.ErrorDescription = eSysError:getMessage(1)\n`;
+  code += `               RowErrors.ErrorSubType = "ERROR".\n`;
+  code += `    END.\n`;
+  code += `    FINALLY:\n`;
+  code += `        IF fn-has-row-errors() THEN DO:\n`;
+  code += `            UNDO, RETURN 'NOK':U.\n`;
+  code += `        END.\n`;
+  code += `    END FINALLY.\n\n`;
 
   code += `END PROCEDURE.\n\n`;
 

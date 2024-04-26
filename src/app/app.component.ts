@@ -181,6 +181,7 @@ export class AppComponent implements OnInit {
       name: dataItem.fieldName,
       type: dataItem.fieldType,
       serializeName: dataItem.serializeName,
+      primaryKey: dataItem.primaryKey,
     });
   }
 
